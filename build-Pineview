@@ -64,4 +64,4 @@ export \
 make clean
 make ${bThreads}
 
-strip -s src/myriadcoind src/myriadcoin-cli src/myriadcoin-tx src/qt/myriad-qt
+strip -s src/unitusd src/unitus-cli src/unitus-tx src/qt/unitus-qt
