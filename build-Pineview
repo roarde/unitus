@@ -1,0 +1,67 @@
+#!/bin/sh
+
+
+[ "$1" = 'single' ] && unset -v bThreads || bThreads='-j 2'
+
+{ [ -d "${BDBDIR}" ]
+} || {
+   {
+      echo
+      echo 'Use:'
+      echo 'BDBDIR=/full/path/to/static/berkeley-db-4.8/directory '"$0"
+      echo
+   } >&2
+   exit 1
+}
+
+rm -f config.status
+./autogen.sh || echo done
+
+optlevelC=" \
+   -O3 \
+   -funroll-loops \
+   -fvariable-expansion-in-unroller \
+   -ftree-loop-distribution \
+   -ftree-vectorize \
+   -fmodulo-sched \
+   -fmodulo-sched-allow-regmoves \
+   -fgcse-sm \
+   -fgcse-las \
+   -momit-leaf-frame-pointer \
+   -minline-all-stringops "
+#   -Ofast -flto -fuse-linker-plugin \
+
+optlevelCXX=" \
+   ${optlevelC} "
+#   -O2 "
+#   -O2 \
+#   -fuse-linker-plugin "
+
+archopts=" \
+  -march=bonnell \
+  -m32 \
+  -mcx16 \
+  -malign-double \
+  -mno-8bit-idiv \
+  -mssse3 \
+  -mfpmath=sse "
+
+export \
+   BDB_CFLAGS="-I${BDBDIR}/include" \
+   BDB_LIBS="-L${BDBDIR}/lib -ldb_cxx-4.8" \
+   CPPFLAGS="-DUSE_SSE2" \
+   CFLAGS="${optlevelC} ${archopts}" \
+   CXXFLAGS="${optlevelCXX} ${archopts}"
+
+./configure \
+   --disable-tests \
+   --disable-gui-tests \
+   --disable-bench
+#   --disable-hardening \
+
+#exit  # To examine the configure first
+
+make clean
+make ${bThreads}
+
+strip -s src/myriadcoind src/myriadcoin-cli src/myriadcoin-tx src/qt/myriad-qt
